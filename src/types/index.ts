@@ -153,6 +153,13 @@ export interface Conversation {
   last_message_text?: string;
   last_message_at?: string;
   unread_count: number;
+  /**
+   * Inbox-list visibility. Defaults to true. A broadcast-only
+   * conversation (created by the mirror job, no inbound/non-broadcast
+   * activity yet) is false → hidden from the list but still openable
+   * directly; the first inbound reply flips it true.
+   */
+  visible_in_inbox?: boolean;
   created_at: string;
   updated_at: string;
   contact?: Contact;
@@ -183,6 +190,8 @@ export interface Message {
   message_id?: string;
   status: MessageStatus;
   created_at: string;
+  /** Origin marker. 'broadcast' for messages mirrored from a broadcast. */
+  source?: string;
   reply_to_message_id?: string;
   /**
    * Only set when `content_type === 'interactive'` — the stable id of

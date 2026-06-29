@@ -82,6 +82,10 @@ export function ConversationList({
       const { data, error } = await supabase
         .from("conversations")
         .select("*, contact:contacts(*)")
+        // Hide broadcast-only conversations (visible_in_inbox=false) until
+        // the recipient replies. Existing/normal conversations default to
+        // true, so this changes nothing for them.
+        .eq("visible_in_inbox", true)
         .order("last_message_at", { ascending: false });
 
       if (cancelled) return;

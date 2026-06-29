@@ -5,6 +5,7 @@ import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
 import { normalizePhone } from '@/lib/whatsapp/phone-utils'
 import { findExistingContact, isUniqueViolation } from '@/lib/contacts/dedupe'
 import { verifyMetaWebhookSignature } from '@/lib/whatsapp/webhook-signature'
+import { mirrorPendingForContact } from '@/lib/broadcasts/mirror'
 import { runAutomationsForTrigger } from '@/lib/automations/engine'
 import { dispatchInboundToFlows } from '@/lib/flows/engine'
 import {
@@ -624,6 +625,11 @@ async function processMessage(
       last_message_at: new Date().toISOString(),
       unread_count: (conversation.unread_count || 0) + 1,
       updated_at: new Date().toISOString(),
+      // Real inbound activity — surface this conversation in the inbox
+      // list. A broadcast-only conversation starts hidden
+      // (visible_in_inbox=false, set by the mirror job); the first reply
+      // flips it visible. No-op for already-visible conversations.
+      visible_in_inbox: true,
     })
     .eq('id', conversation.id)
 
@@ -635,6 +641,14 @@ async function processMessage(
   // so the broadcast's `replied_count` advances (via the aggregate
   // trigger installed in migration 003).
   await flagBroadcastReplyIfAny(accountId, contactRecord.id)
+
+  // Safety-net for requirement 5's race: if this contact has broadcast
+  // messages that the mirror cron hasn't processed yet, mirror them now
+  // so the reply shows with the broadcast message already above it. The
+  // mirror's claim lock guarantees this can't double-insert with the
+  // cron. Stamped with the original send time, so it sorts above this
+  // just-inserted reply regardless of insertion order.
+  await mirrorPendingForContact(supabaseAdmin(), contactRecord.id)
 
   // ============================================================
   // Flow runner dispatch.

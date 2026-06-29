@@ -148,6 +148,12 @@ export default function InboxPage() {
               : c,
           );
         }
+        // Don't surface a broadcast-only conversation in the list. The
+        // mirror job inserts its message (firing a realtime event that
+        // lands here), but the conversation must stay hidden until the
+        // recipient replies — at which point the webhook sets
+        // visible_in_inbox=true and a later event adds it.
+        if (fetched.visible_in_inbox === false) return prev;
         return [fetched, ...prev];
       });
     } finally {
@@ -217,6 +223,13 @@ export default function InboxPage() {
           });
         }
 
+        // Mirrored broadcast messages must not touch the inbox list: they
+        // carry the original (past) send time, so patching last_message_at
+        // would regress a visible conversation's sort/preview, and hidden
+        // broadcast-only conversations must stay out of the list entirely.
+        // The thread still shows the message above (setMessages) when open.
+        if (newMsg.source === "broadcast") return;
+
         // Update conversation list preview. We need to know *synchronously*
         // whether the conv is already in state to decide between patching
         // the preview and triggering a hydrate — see the comment on
@@ -268,6 +281,11 @@ export default function InboxPage() {
       const conv = event.new;
 
       if (event.eventType === "INSERT") {
+        // A broadcast-only conversation (created by the mirror job) must
+        // not appear in the inbox list until the recipient replies. Skip
+        // it here; the webhook's visible_in_inbox=true UPDATE on reply
+        // will bring it in.
+        if (conv.visible_in_inbox === false) return;
         // Prepend immediately for snappy UX so the new conv shows in the
         // list right away, then hydrate to fill in the `contact` join
         // (realtime payloads never include joins). Skip both if we
@@ -423,6 +441,25 @@ export default function InboxPage() {
               ),
             );
           }
+        } else {
+          // Not in the list — most likely a broadcast-only conversation,
+          // which is hidden from the inbox list but still openable via a
+          // direct ?c=<id> link (e.g. from the contact). Fetch it on its
+          // own and open it; its chat shows the broadcast message.
+          (async () => {
+            const supabase = createClient();
+            const { data } = await supabase
+              .from("conversations")
+              .select("*, contact:contacts(*)")
+              .eq("id", deepLinkConvId)
+              .maybeSingle();
+            if (data) {
+              const conv = data as Conversation;
+              setActiveConversation(conv);
+              setActiveContact(conv.contact ?? null);
+              setMessages([]);
+            }
+          })();
         }
       }
     },

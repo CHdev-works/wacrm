@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Contact, MessageTemplate } from '@/types';
+import { renderTemplateBody } from '@/lib/broadcasts/render';
 
 export type CustomFieldOperator = 'is' | 'is_not' | 'contains';
 
@@ -437,17 +438,29 @@ export function useBroadcastSending(): UseBroadcastSendingReturn {
       for (let i = 0; i < recipients.length; i += SEND_BATCH_SIZE) {
         const batch = recipients.slice(i, i + SEND_BATCH_SIZE);
 
+        // Resolve each recipient's variables once, keyed by recipient id,
+        // so we can reuse the same values for both the send request and
+        // the `rendered_body` we persist for the inbox mirror — no extra
+        // work in the send path.
+        const paramsByRecipientId = new Map<string, string[]>();
+        for (const r of batch) {
+          if (r.contact) {
+            paramsByRecipientId.set(
+              r.id,
+              resolveVariables(
+                payload.variables,
+                r.contact,
+                customValueIndex.get(r.contact.id),
+              ),
+            );
+          }
+        }
+
         const apiRecipients = batch
           .filter((r) => r.contact?.phone)
           .map((r) => ({
             phone: r.contact!.phone as string,
-            params: r.contact
-              ? resolveVariables(
-                  payload.variables,
-                  r.contact,
-                  customValueIndex.get(r.contact.id),
-                )
-              : [],
+            params: paramsByRecipientId.get(r.id) ?? [],
           }));
 
         if (apiRecipients.length === 0) continue;
@@ -498,6 +511,13 @@ export function useBroadcastSending(): UseBroadcastSendingReturn {
                   sent_at: new Date().toISOString(),
                   whatsapp_message_id: result.whatsapp_message_id ?? null,
                   error_message: null,
+                  // Persist the exact text this recipient received so the
+                  // background mirror job can drop it into their 1:1 chat
+                  // thread. Pure string op — no extra round-trips.
+                  rendered_body: renderTemplateBody(
+                    payload.template.body_text ?? '',
+                    paramsByRecipientId.get(recipient.id) ?? [],
+                  ),
                 })
                 .eq('id', recipient.id);
             } else {

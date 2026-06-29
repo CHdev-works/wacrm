@@ -24,14 +24,38 @@ export interface MetaPhoneInfo {
 }
 
 interface MetaErrorResponse {
-  error?: { message?: string; code?: number; type?: string }
+  error?: {
+    message?: string
+    code?: number
+    type?: string
+    // Meta's human-actionable fields. `message` is the generic top line
+    // ("(#100) Invalid parameter"); these say WHICH value was rejected.
+    error_subcode?: number
+    error_user_title?: string
+    error_user_msg?: string
+    fbtrace_id?: string
+  }
 }
 
 async function throwMetaError(response: Response, fallback: string): Promise<never> {
   let message = fallback
   try {
     const data = (await response.json()) as MetaErrorResponse
-    if (data.error?.message) message = data.error.message
+    const err = data.error
+    if (err) {
+      // Prefer Meta's actionable detail over the opaque top-line code.
+      // error_user_msg/title name the offending field/value (e.g. a bad
+      // button URL); without them the user only sees "Invalid parameter".
+      const detail =
+        err.error_user_title && err.error_user_msg
+          ? `${err.error_user_title}: ${err.error_user_msg}`
+          : err.error_user_msg || err.error_user_title
+      if (detail) {
+        message = err.message ? `${err.message} — ${detail}` : detail
+      } else if (err.message) {
+        message = err.message
+      }
+    }
   } catch {
     // response body wasn't JSON — keep the fallback
   }

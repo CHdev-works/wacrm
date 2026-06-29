@@ -177,6 +177,25 @@ describe('validateButtons', () => {
       validateButtons([{ type: 'QUICK_REPLY', text: '' }]),
     ).toThrow(/missing text/);
   });
+  it('rejects button text containing an emoji (Meta subcode 2388060)', () => {
+    expect(() =>
+      validateButtons([
+        { type: 'URL', text: 'Visit our Website🌐', url: 'https://x.com/' },
+      ]),
+    ).toThrow(/emoji/);
+  });
+  it('rejects button text containing a newline', () => {
+    expect(() =>
+      validateButtons([{ type: 'QUICK_REPLY', text: 'Line1\nLine2' }]),
+    ).toThrow(/line breaks/);
+  });
+  it('accepts a plain URL button without emoji', () => {
+    expect(() =>
+      validateButtons([
+        { type: 'URL', text: 'Visit our Website', url: 'https://x.com/' },
+      ]),
+    ).not.toThrow();
+  });
   it('rejects URL button without url', () => {
     expect(() =>
       validateButtons([{ type: 'URL', text: 'Go', url: '' }]),

@@ -199,6 +199,15 @@ export async function POST(request: Request) {
         metaStatus = meta.status
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Meta submit failed.'
+        // Server-side breadcrumb for diagnosing Meta rejections. The
+        // payload carries no secrets (the access token lives in the
+        // Authorization header, not the body), so it's safe to log.
+        console.error(
+          '[templates/submit] Meta rejected template payload:',
+          JSON.stringify(metaPayload),
+          '\nReason:',
+          message,
+        )
         // Persist the failure so the user can retry; row stays DRAFT
         // until they fix and re-submit.
         await upsertTemplateRow(

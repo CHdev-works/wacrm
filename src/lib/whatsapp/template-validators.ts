@@ -230,6 +230,21 @@ export function validateButtons(buttons: TemplateButton[] | undefined): void {
         `Button #${i + 1} text exceeds ${TEMPLATE_LIMITS.buttonTextMaxLength} chars.`,
       );
     }
+    // Meta rule (error_subcode 2388060, "Button Format is Incorrect"):
+    // button labels can't contain variables, newlines, emojis, or
+    // formatting characters. Catch it here with an actionable message
+    // instead of letting Meta reject the whole template as a generic
+    // "(#100) Invalid parameter".
+    if (/[\r\n\t]/.test(b.text)) {
+      throw new Error(
+        `Button #${i + 1} text can't contain line breaks (Meta rule).`,
+      );
+    }
+    if (/\p{Extended_Pictographic}/u.test(b.text)) {
+      throw new Error(
+        `Button #${i + 1} text can't contain emojis — Meta rejects button labels with emojis, newlines, variables, or formatting characters.`,
+      );
+    }
     switch (b.type) {
       case 'URL': {
         if (!b.url?.trim()) {

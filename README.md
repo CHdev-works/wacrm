@@ -138,6 +138,11 @@ Key pages:
 - [Architecture](https://wacrm.tech/docs/architecture)
 - [Troubleshooting](https://wacrm.tech/docs/troubleshooting)
 
+In-repo:
+- [Inbound-message notifications](docs/notifications.md) — in-app toasts,
+  unread/tab indicators, browser notifications, preferences, and how to
+  enable Web Push later.
+
 ## Stack
 
 - **App** — Next.js 16 (App Router), React 19, TypeScript, Tailwind v4.

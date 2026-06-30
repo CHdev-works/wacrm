@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Conversation, Message, Contact, ConversationStatus } from "@/types";
 import { useRealtime } from "@/hooks/use-realtime";
+import { useNotifications } from "@/components/notifications/notification-provider";
 import { ConversationList } from "@/components/inbox/conversation-list";
 import { MessageThread } from "@/components/inbox/message-thread";
 import { ContactSidebar } from "@/components/inbox/contact-sidebar";
@@ -60,6 +61,17 @@ export default function InboxPage() {
       // localStorage can throw in private-browsing / sandboxed contexts.
     }
   }, []);
+
+  // Publish the open conversation to the NotificationProvider so it
+  // suppresses toasts/notifications for the thread the agent is reading.
+  // Covers select, deep-link, and close (all flow through
+  // `activeConversation`), and the cleanup clears it when the user
+  // navigates away from the inbox entirely.
+  const { setActiveConversationId } = useNotifications();
+  useEffect(() => {
+    setActiveConversationId(activeConversation?.id ?? null);
+    return () => setActiveConversationId(null);
+  }, [activeConversation?.id, setActiveConversationId]);
 
   const handleToggleContactPanel = useCallback(() => {
     setContactPanelOpen((prev) => {

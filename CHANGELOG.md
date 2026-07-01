@@ -23,6 +23,30 @@ as the sole owner of their own account and sees identical data, and a
 solo owner who never invites anyone sees the same single-user app they
 always did.
 
+### Added
+
+- **WhatsApp-style image viewer in the inbox.** Image messages in a
+  chat thread are now clickable and open a full-screen lightbox: the
+  image centered and uncropped (`object-contain`) over a dimmed
+  backdrop, above all app chrome. Includes zoom (buttons, wheel,
+  pinch, double-tap) with drag-to-pan, prev/next through the
+  conversation's images (keyed by message id, so a realtime arrival
+  can't hijack the view; `←`/`→` supported), download (extension
+  inferred from the response `Content-Type` since no MIME is stored),
+  and open-in-new-tab. Close via the ✕ button, `Escape`, or clicking
+  outside the image; focus returns to the thumbnail. Loading and
+  error states are handled, and expired/invalid Meta media degrades to
+  a Retry / open-in-new-tab prompt rather than a blank modal. Inbound
+  (proxied) and outbound (public storage) images share one
+  ref-counted resolver (`useResolvedMedia`), so opening the viewer
+  never refetches an already-loaded image and object URLs aren't
+  revoked while still in use. No change to how video, audio, document,
+  template, or location messages render. No new media endpoint — the
+  viewer only ever displays `media_url`s already present in the
+  authorized conversation, and inbound images still load through the
+  existing authenticated media proxy (the WhatsApp token stays
+  server-side).
+
 ### Changed
 
 - **Tenancy moves from per-user to per-account.** RLS on every

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import type { Message, MessageReaction } from "@/types";
 import {
@@ -17,6 +16,8 @@ import {
 import { format } from "date-fns";
 import { ReplyQuote } from "./reply-quote";
 import { MessageReactions } from "./message-reactions";
+import { useImageViewer } from "./image-viewer";
+import { useResolvedMedia } from "@/hooks/use-resolved-media";
 
 interface MessageBubbleProps {
   message: Message;
@@ -53,42 +54,20 @@ function MediaUnavailable({ label }: { label: string }) {
   );
 }
 
-function MediaImage({ url, alt }: { url: string; alt: string }) {
-  const [src, setSrc] = useState<string | null>(null);
-  const [error, setError] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  const loadImage = useCallback(async () => {
-    if (!url) return;
-
-    // Proxy URLs need auth fetch to create blob URL
-    if (url.startsWith("/api/whatsapp/media/")) {
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Failed to load media");
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        setSrc(blobUrl);
-      } catch {
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      setSrc(url);
-      setLoading(false);
-    }
-  }, [url]);
-
-  useEffect(() => {
-    loadImage();
-    return () => {
-      if (src?.startsWith("blob:")) {
-        URL.revokeObjectURL(src);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadImage]);
+function MediaImage({
+  url,
+  alt,
+  messageId,
+}: {
+  url: string;
+  alt: string;
+  messageId: string;
+}) {
+  // Shared, ref-counted resolver — the full-screen viewer consumes the
+  // same entry, so opening it never refetches a proxied image and the
+  // object URL isn't revoked while either consumer still needs it.
+  const { src, loading, error } = useResolvedMedia(url);
+  const { openViewer, isViewable } = useImageViewer();
 
   if (error) {
     return (
@@ -98,7 +77,7 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
     );
   }
 
-  if (loading) {
+  if (loading || !src) {
     return (
       <div className="flex h-40 w-60 items-center justify-center rounded-lg bg-muted">
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -106,13 +85,28 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
     );
   }
 
-  return (
+  const img = (
     <img
-      src={src ?? ""}
+      src={src}
       alt={alt}
       className="max-h-64 max-w-60 rounded-lg object-cover"
-      onError={() => setError(true)}
     />
+  );
+
+  // Only the gallery-registered images (present in the loaded thread) get
+  // a click target — keeps the trigger honest and avoids opening a viewer
+  // for a message the provider doesn't know about.
+  if (!isViewable(messageId)) return img;
+
+  return (
+    <button
+      type="button"
+      onClick={() => openViewer(messageId)}
+      aria-label={`Open image: ${alt}`}
+      className="block cursor-pointer rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {img}
+    </button>
   );
 }
 
@@ -129,7 +123,11 @@ function MessageContent({ message }: { message: Message }) {
       return (
         <div>
           {message.media_url ? (
-            <MediaImage url={message.media_url} alt="Shared image" />
+            <MediaImage
+              url={message.media_url}
+              alt={message.content_text?.trim() || "Shared image"}
+              messageId={message.id}
+            />
           ) : (
             <MediaUnavailable label="Image" />
           )}

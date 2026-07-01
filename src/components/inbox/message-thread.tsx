@@ -39,6 +39,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageBubble } from "./message-bubble";
 import { MessageActions } from "./message-actions";
+import { ImageViewerProvider } from "./image-viewer";
 import {
   MessageComposer,
   CHAT_MEDIA_BUCKET,
@@ -809,14 +810,15 @@ export function MessageThread({
     : "Assign";
 
   return (
-    // `min-w-0` is load-bearing: the page already puts min-w-0 on the
-    // thread's flex *wrapper* (issue #165), but this root keeps the
-    // default `min-width: auto`, so a single wide message (long unbroken
-    // URL/word) expands the whole thread past its flex share and the chat
-    // paints on top of the contact sidebar at lg+ — outgoing bubbles get
-    // clipped and the hover toolbar overlaps the Tags panel. Letting the
-    // root shrink lets the bubbles' break-words / max-w caps apply.
-    // Issue #257.
+    <ImageViewerProvider messages={messages}>
+    {/* `min-w-0` is load-bearing: the page already puts min-w-0 on the
+        thread's flex *wrapper* (issue #165), but this root keeps the
+        default `min-width: auto`, so a single wide message (long unbroken
+        URL/word) expands the whole thread past its flex share and the chat
+        paints on top of the contact sidebar at lg+ — outgoing bubbles get
+        clipped and the hover toolbar overlaps the Tags panel. Letting the
+        root shrink lets the bubbles' break-words / max-w caps apply.
+        Issue #257. */}
     <div className={cn("flex min-w-0 flex-1 flex-col", DOODLE_BG_CLASSES)}>
       {/* Header — solid card surface sits on top of the doodle so the
           name/avatar/dropdowns stay legible. */}
@@ -1087,5 +1089,6 @@ export function MessageThread({
         onSelect={handleSendTemplate}
       />
     </div>
+    </ImageViewerProvider>
   );
 }

@@ -18,14 +18,11 @@ dimmed full-screen backdrop.
 - **Download** — fetches the already-resolved bytes and saves them; the
   file extension is inferred from the response `Content-Type` (message
   rows store no MIME), falling back to the URL extension, then `.jpg`.
-- **Open in new tab** — uses the original `media_url` (the auth cookie
-  carries for proxied inbound images; public storage URLs open
-  directly), never the transient blob URL.
 - **Close** — ✕ button, `Escape`, or clicking the dimmed area outside
   the image (clicks on the image/controls don't close). Focus returns
   to the thumbnail that opened it.
-- **States** — spinner while resolving; an error card with **Retry** and
-  **Open in new tab** if the image can't load (e.g. expired Meta media).
+- **States** — spinner while resolving; an error card with **Retry** if
+  the image can't load (e.g. expired Meta media).
 - **A11y / mobile** — `role="dialog"` + `aria-modal` via Base UI (focus
   trap, scroll lock, focus restore), `aria-live` status, `prefers-
   reduced-motion` respected, full-screen `dvh` sizing, ≥44px touch
@@ -77,8 +74,7 @@ Manual (in the inbox):
 3. Close via ✕, `Escape`, and clicking outside the image — but clicking
    **on** the image does not close.
 4. Prev/next + `←`/`→` stay within the conversation's images.
-5. Download names the file correctly for both URL types; open-in-new-tab
-   works for both.
+5. Download names the file correctly for both URL types.
 6. Loading spinner and the error card (e.g. an expired Meta media id)
    behave; Retry re-fetches.
 7. A logged-out or other-account user still cannot load an inbound image

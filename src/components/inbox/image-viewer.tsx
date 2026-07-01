@@ -16,7 +16,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  ExternalLink,
   ImageOff,
   Minus,
   Plus,
@@ -280,18 +279,11 @@ function ImageViewer({
       a.remove();
       URL.revokeObjectURL(objectUrl);
     } catch {
-      // Non-fatal — the "open in new tab" fallback still works.
+      // Non-fatal — a failed download just leaves the viewer as-is.
     } finally {
       setDownloading(false);
     }
   }, [src, active]);
-
-  // Open-in-new-tab uses the ORIGINAL media_url (auth cookie carries for
-  // proxy URLs; public storage URLs open directly) — never the transient
-  // blob URL, which would be revoked when the viewer closes.
-  const openInNewTab = useCallback(() => {
-    if (active) window.open(active.url, "_blank", "noopener,noreferrer");
-  }, [active]);
 
   const hasPrev = activeIndex > 0;
   const hasNext = activeIndex >= 0 && activeIndex < images.length - 1;
@@ -349,9 +341,6 @@ function ImageViewer({
               >
                 <Download />
               </ViewerButton>
-              <ViewerButton label="Open in new tab" onClick={openInNewTab}>
-                <ExternalLink />
-              </ViewerButton>
               <ViewerButton label="Close" onClick={onClose}>
                 <X />
               </ViewerButton>
@@ -401,22 +390,13 @@ function ImageViewer({
                 <div className="pointer-events-auto flex flex-col items-center gap-3 text-white/80">
                   <ImageOff className="h-10 w-10" />
                   <p className="text-sm">This image couldn&apos;t be loaded.</p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={retry}
-                      className="min-h-[44px] rounded-lg bg-white/10 px-4 text-sm font-medium hover:bg-white/20"
-                    >
-                      Retry
-                    </button>
-                    <button
-                      type="button"
-                      onClick={openInNewTab}
-                      className="min-h-[44px] rounded-lg bg-white/10 px-4 text-sm font-medium hover:bg-white/20"
-                    >
-                      Open in new tab
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={retry}
+                    className="min-h-[44px] rounded-lg bg-white/10 px-4 text-sm font-medium hover:bg-white/20"
+                  >
+                    Retry
+                  </button>
                 </div>
               )}
             </div>

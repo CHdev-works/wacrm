@@ -31,12 +31,12 @@ always did.
   backdrop, above all app chrome. Includes zoom (buttons, wheel,
   pinch, double-tap) with drag-to-pan, prev/next through the
   conversation's images (keyed by message id, so a realtime arrival
-  can't hijack the view; `←`/`→` supported), download (extension
-  inferred from the response `Content-Type` since no MIME is stored),
-  and open-in-new-tab. Close via the ✕ button, `Escape`, or clicking
-  outside the image; focus returns to the thumbnail. Loading and
-  error states are handled, and expired/invalid Meta media degrades to
-  a Retry / open-in-new-tab prompt rather than a blank modal. Inbound
+  can't hijack the view; `←`/`→` supported), and download (extension
+  inferred from the response `Content-Type` since no MIME is stored).
+  Close via the ✕ button, `Escape`, or clicking outside the image;
+  focus returns to the thumbnail. Loading and error states are
+  handled, and expired/invalid Meta media degrades to a Retry prompt
+  rather than a blank modal. Inbound
   (proxied) and outbound (public storage) images share one
   ref-counted resolver (`useResolvedMedia`), so opening the viewer
   never refetches an already-loaded image and object URLs aren't

@@ -18,6 +18,7 @@ import { ReplyQuote } from "./reply-quote";
 import { MessageReactions } from "./message-reactions";
 import { useImageViewer } from "./image-viewer";
 import { useResolvedMedia } from "@/hooks/use-resolved-media";
+import { LinkifiedText } from "@/lib/linkify";
 
 interface MessageBubbleProps {
   message: Message;
@@ -115,7 +116,7 @@ function MessageContent({ message }: { message: Message }) {
     case "text":
       return (
         <p className="whitespace-pre-wrap break-words text-sm">
-          {message.content_text}
+          <LinkifiedText text={message.content_text} />
         </p>
       );
 
@@ -133,7 +134,7 @@ function MessageContent({ message }: { message: Message }) {
           )}
           {message.content_text && (
             <p className="mt-1 whitespace-pre-wrap break-words text-sm">
-              {message.content_text}
+              <LinkifiedText text={message.content_text} />
             </p>
           )}
         </div>
@@ -153,7 +154,7 @@ function MessageContent({ message }: { message: Message }) {
           )}
           {message.content_text && (
             <p className="mt-1 whitespace-pre-wrap break-words text-sm">
-              {message.content_text}
+              <LinkifiedText text={message.content_text} />
             </p>
           )}
         </div>
@@ -197,7 +198,7 @@ function MessageContent({ message }: { message: Message }) {
           </span>
           {message.content_text && (
             <p className="mt-1 whitespace-pre-wrap break-words text-sm">
-              {message.content_text}
+              <LinkifiedText text={message.content_text} />
             </p>
           )}
         </div>
@@ -224,7 +225,11 @@ function MessageContent({ message }: { message: Message }) {
             Button reply
           </span>
           <p className="whitespace-pre-wrap break-words text-sm">
-            {message.content_text || "[Interactive reply]"}
+            {message.content_text ? (
+              <LinkifiedText text={message.content_text} />
+            ) : (
+              "[Interactive reply]"
+            )}
           </p>
         </div>
       );
@@ -233,7 +238,11 @@ function MessageContent({ message }: { message: Message }) {
     default:
       return (
         <p className="whitespace-pre-wrap break-words text-sm">
-          {message.content_text || "[Unsupported message type]"}
+          {message.content_text ? (
+            <LinkifiedText text={message.content_text} />
+          ) : (
+            "[Unsupported message type]"
+          )}
         </p>
       );
   }

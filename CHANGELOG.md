@@ -25,6 +25,20 @@ always did.
 
 ### Added
 
+- **Clickable links in chat messages.** URLs inside message body text
+  (text messages, image/video captions, template bodies, interactive
+  replies, and the fallback render) are now auto-linked and open in a
+  new tab (`target="_blank"` + `rel="noopener noreferrer"`). Explicit
+  `http(s)://` and `www.` URLs are linked; scheme-less domains, phone
+  numbers, order numbers, decimals, and filenames are left as plain
+  text. Every href is validated with `new URL()` and only `http`/`https`
+  are allowed — `javascript:`/`data:`/`file:` etc. render as plain text.
+  Links are rendered as **React nodes, never HTML** (message text is
+  treated as attacker-controlled), so there's no XSS surface, and a
+  caption link stops event propagation so clicking it opens the link
+  rather than the image viewer. Line breaks, spacing, and emoji are
+  preserved; compact previews (reply-quote, conversation-list
+  last-message) stay plain. Helper: `src/lib/linkify.tsx`.
 - **WhatsApp-style image viewer in the inbox.** Image messages in a
   chat thread are now clickable and open a full-screen lightbox: the
   image centered and uncropped (`object-contain`) over a dimmed
